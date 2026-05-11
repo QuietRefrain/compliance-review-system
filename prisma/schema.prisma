@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// AI 模型配置
+model AIModel {
+  id          String   @id @default(cuid())
+  name        String   // 显示名称，如 "GPT-4o", "Claude 3.5 Sonnet"
+  provider    String   // 提供商: openai, anthropic, zhipu, deepseek, custom
+  modelId     String   // 模型ID，如 "gpt-4o", "claude-3-5-sonnet"
+  apiKey      String?  // API密钥（加密存储）
+  baseUrl     String?  // 自定义API地址
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  maxTokens   Int      @default(4096)
+  temperature Float    @default(0.7)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       ComplianceTask[] // 关联的审查任务
+}
+
+// 法规知识库
+model Regulation {
+  id          String   @id @default(cuid())
+  title       String   // 法规标题
+  category    String   // 分类: 合同法, 劳动法, 数据保护, 金融监管 等
+  content     String   // 法规内容
+  source      String?  // 来源
+  effectiveDate DateTime? // 生效日期
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clauses     RegulationClause[]
+}
+
+// 法规条款
+model RegulationClause {
+  id             String   @id @default(cuid())
+  regulationId   String
+  clauseNumber   String   // 条款编号
+  title          String   // 条款标题
+  content        String   // 条款内容
+  riskLevel      String   @default("medium") // low, medium, high, critical
+  keywords       String?  // 关键词（逗号分隔）
+  createdAt      DateTime @default(now())
+
+  regulation     Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+}
+
+// 合规审查任务
+model ComplianceTask {
+  id              String   @id @default(cuid())
+  title           String   // 任务标题
+  description     String?  // 任务描述
+  documentContent String   // 待审查文档内容
+  documentTitle   String?  // 文档标题
+  status          String   @default("pending") // pending, running, completed, failed
+  aiModelId       String?  // 使用的AI模型
+  
+  // 各 Agent 执行结果
+  retrievalResult  String?  // 检索Agent结果
+  analysisResult   String?  // 分析Agent结果
+  riskResult       String?  // 风险评级Agent结果
+  revisionResult   String?  // 修订Agent结果
+  
+  // 执行进度
+  currentStep      String?  // 当前步骤: retrieval, analysis, risk, revision
+  progress         Int      @default(0) // 0-100
+  
+  // 统计
+  totalIssues      Int      @default(0) // 发现问题总数
+  highRiskCount    Int      @default(0) // 高风险数量
+  mediumRiskCount  Int      @default(0) // 中风险数量
+  lowRiskCount     Int      @default(0) // 低风险数量
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+
+  aiModel         AIModel? @relation(fields: [aiModelId], references: [id])
+  agentLogs       AgentLog[]
+}
+
+// Agent 执行日志
+model AgentLog {
+  id          String   @id @default(cuid())
+  taskId      String   // 关联任务
+  agentType   String   // agent类型: retrieval, analysis, risk, revision
+  agentName   String   // Agent名称
+  status      String   @default("pending") // pending, running, completed, failed
+  input       String?  // 输入内容
+  output      String?  // 输出内容
+  error       String?  // 错误信息
+  duration    Int?     // 执行时长（毫秒）
+  tokenUsage  Int?     // Token消耗
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  task        ComplianceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
