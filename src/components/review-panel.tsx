@@ -277,12 +277,12 @@ export function ReviewPanel() {
             </div>
             <div>
               <label className="text-sm font-medium">选择 AI 模型</label>
-              <Select value={selectedModelId} onValueChange={setSelectedModelId} disabled={running}>
+              <Select value={selectedModelId || 'default'} onValueChange={(v) => setSelectedModelId(v === 'default' ? '' : v)} disabled={running}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="使用默认模型" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">自动（默认模型）</SelectItem>
+                  <SelectItem value="default">自动（默认模型）</SelectItem>
                   {models
                     .filter((m) => m.isActive)
                     .map((m) => (
