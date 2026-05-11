@@ -241,12 +241,12 @@ export function ModelManager() {
               <Zap className="w-5 h-5 text-emerald-600" />
               <span className="text-sm font-medium">当前活跃模型：</span>
             </div>
-            <Select value={selectedModelId || ''} onValueChange={setSelectedModelId}>
+            <Select value={selectedModelId || 'default'} onValueChange={(v) => setSelectedModelId(v === 'default' ? null : v)}>
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="使用默认模型" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">自动（默认模型）</SelectItem>
+                <SelectItem value="default">自动（默认模型）</SelectItem>
                 {models.filter(m => m.isActive).map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name} ({m.provider})
